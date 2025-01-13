@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <title>我的專案</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- 同樣使用同一份 styles.css -->
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <!-- 代碼雨背景 Canvas (我們在 script.js 裡加一段 codeRain 也可以) -->
+  <canvas id="codeRainCanvas"></canvas>
+
+  <!-- 頂部 (同樣做 Sticky) -->
+  <header class="header-section">
+    <div class="logo">
+      <h1>Project</h1>
+    </div>
+    <nav class="nav">
+      <ul>
+        <!-- 返回首頁 (index.html) -->
+        <li><a href="index.html">Back to Home</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <!-- 頁面內容 -->
+  <section class="project-page-container">
+    <h2 class="section-title">專案</h2>
+    <p>在這裡可以寫下完整專案介紹、技術細節、Demo 截圖、使用教學等。</p>
+  </section>
+
+  <!-- 引用同一隻 script.js，但在裡面做條件判斷：如果是 project1.html，就載入 codeRain，而不是星海 -->
+  <script src="script.js"></script>
+  <script>
+    // 簡易切換: 當前頁面是 project1 就跑代碼雨
+    // （你也可拆成兩隻JS, 或用URL判斷）
+    document.addEventListener("DOMContentLoaded", () => {
+      startCodeRain(); 
+      // 這個函式在 script.js 裡會做代碼雨效果
+    });
+  </script>
+</body>
+</html>
