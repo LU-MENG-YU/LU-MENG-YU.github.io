@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <!-- 防止縮放，提高行動裝置點擊靈敏度 -->
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
+  <title>Pokémon Ball Evolution Game</title>
+  <style>
+    /******************************************
+     * 1. 基本排版 + 防捲動
+     ******************************************/
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100vh;
+      overflow: hidden;
+      touch-action: none;
+      font-family: sans-serif;
+      background: url('https://raw.githubusercontent.com/410736030/PBEG/main/img/BG.png') no-repeat center center fixed;
+      background-size: cover;
+      opacity: 0.9;
+    }
+
+    .main {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+      height: 100%;
+      box-sizing: border-box;
+    }
+
+    h1 {
+      margin-top: 1rem;
+      margin-bottom: 0.5rem;
+      text-align: center;
+    }
+
+    /******************************************
+     * 2. 記分板
+     ******************************************/
+    .scoreboard {
+      width: 600px;
+      max-width: 90%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin: 0.5rem auto 1rem auto;
+    }
+    .score {
+      font-size: 1.3rem;
+      font-weight: bold;
+    }
+    .best-score {
+      font-size: 1rem;
+      color: #333;
+    }
+    .next-ball-info {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 1rem;
+    }
+    /* 預覽：固定30×30 */
+    #nextBallPreview {
+      width: 30px; height: 30px;
+      border-radius: 50%;
+      background-position: center;
+      background-size: cover;
+      background-repeat: no-repeat;
+      background-color: #aaa; /* fallback */
+    }
+
+    /******************************************
+     * 3. 容器
+     ******************************************/
+    .game-container {
+      position: relative;
+      width: 600px;
+      max-width: 90%;
+      height: 500px;
+      background-color: #fff;
+      border: 4px solid #888;
+      border-radius: 8px;
+      overflow: hidden;
+      cursor: pointer;
+    }
+    /* 可自行移除網格背景 */
+    .game-container::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(#ccc 1px, transparent 1px),
+        linear-gradient(90deg, #ccc 1px, transparent 1px);
+      background-size: 20px 20px;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    /* 警戒線(預設隱藏) */
+    .warning-line {
+      position: absolute;
+      left: 0; width: 100%; height: 0;
+      border-top: 3px dashed red;
+      z-index: 3;
+      pointer-events: none;
+      display: none;
+    }
+
+    /******************************************
+     * 4. 球樣式
+     ******************************************/
+    .current-ball, .placed-ball {
+      position: absolute;
+      border-radius: 50%;
+      box-shadow: 0 0 10px rgba(0,0,0,0.3);
+      background-position: center;
+      background-repeat: no-repeat;
+      background-size: cover;
+      z-index: 2;
+    }
+
+    /******************************************
+     * 5. 遊戲結束遮罩
+     ******************************************/
+    .game-over-mask {
+      position: absolute;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 5;
+      color: #fff;
+    }
+    .game-over-mask h2 {
+      font-size: 3rem; 
+      margin-bottom: 1rem;
+    }
+    .game-over-mask button {
+      font-size: 1.2rem;
+      padding: 0.5rem 1rem;
+      cursor: pointer;
+      border: none;
+      border-radius: 8px;
+    }
+
+    /******************************************
+     * 6. 對照表 (統一30×30)
+     ******************************************/
+    .legend-container {
+      margin-top: 1rem;
+      display: flex;
+      flex-direction: row;
+      justify-content: center;
+      gap: 2rem;
+      flex-wrap: wrap;
+      max-width: 600px;
+    }
+    .legend-ball {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      font-size: 0.8rem;
+      color: #333;
+      gap: 0.2rem;
+    }
+    .legend-ball .ball-shape {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      background-position: center;
+      background-repeat: no-repeat;
+      background-size: cover;
+      box-shadow: 0 0 5px rgba(0,0,0,0.3);
+    }
+      /* ========== Sticky Header ========== */
+  .header-section {
+    position: fixed; /* 固定在頂端 */
+    top: 0;
+    width: 100%;
+    z-index: 999;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 2rem;
+    background: rgb(0, 0, 0,0.5);
+  }
+  /* 為了避免內容被 header 蓋住，可以給 body 或主要容器加上 padding-top */
+  body {
+    padding-top: 80px; /* 與 header 高度相呼應 */
+  }
+  .logo h1 {
+    color: #00eccf;
+    font-size: 1.3rem;
+    line-height: 1.4;
+  }
+  .nav ul {
+    list-style: none;
+    display: flex;
+    gap: 1.5rem;
+  }
+  .nav ul li a {
+    text-decoration: none;
+    color: #fff;
+    font-weight: 500;
+    transition: color 0.3s;
+  }
+  .nav ul li a:hover {
+    color: #00eccf;
+  }
+  </style>
+</head>
+<body>
+    <header class="header-section">
+        <div class="logo">
+          <h1>Project</h1>
+        </div>
+        <nav class="nav">
+          <ul>
+            <!-- 返回首頁 (index.html) -->
+            <li><a href="index.html">Back to Home</a></li>
+          </ul>
+        </nav>
+      </header>
+  <div class="main">
+    <h1>Pokémon Ball Evolution Game</h1>
+
+    <!-- 記分板 -->
+    <div class="scoreboard">
+      <div class="score" id="scoreText">分數: 0</div>
+      <div class="best-score" id="bestScoreText">歷史最佳: 0</div>
+      <div class="next-ball-info">
+        <span>下一顆:</span>
+        <div id="nextBallPreview"></div>
+      </div>
+    </div>
+
+    <!-- 容器 -->
+    <div class="game-container" id="gameContainer">
+      <!-- 警戒線 (可見) -->
+      <div class="warning-line" id="warningLine"></div>
+
+      <div class="game-over-mask" id="gameOverMask" style="display:none;">
+        <h2>遊戲結束!</h2>
+        <p id="finalScoreText" style="margin-bottom:1rem;">最終分數: 0</p>
+        <button id="restartBtn">重新開始</button>
+      </div>
+    </div>
+
+    <!-- 對照表 -->
+    <div class="legend-container" id="legendContainer"></div>
+  </div>
+
+  <script>
+    /********************************************************
+     * A. 設定 (預留 image)
+     ********************************************************/
+    const BALL_CONFIGS = [
+      { size: 30,   color: '#FF9999', score: 2,   image: 'https://raw.githubusercontent.com/410736030/PBEG/main/img/B1.png' }, // 大小1
+      { size: 45,   color: '#99FF99', score: 4,   image: 'https://raw.githubusercontent.com/410736030/PBEG/main/img/B2.png' }, // 大小2
+      { size: 70,   color: '#9999FF', score: 8,   image: 'https://raw.githubusercontent.com/410736030/PBEG/main/img/B3.png' }, // 大小3
+      { size: 90,   color: '#FFFF99', score: 16,  image: 'https://raw.githubusercontent.com/410736030/PBEG/main/img/B4.png' }, // 大小4
+      { size: 110,  color: '#FF99FF', score: 32,  image: 'https://raw.githubusercontent.com/410736030/PBEG/main/img/B5.png' }, // 大小5
+      { size: 140,  color: '#99FFFF', score: 64,  image: 'https://raw.githubusercontent.com/410736030/PBEG/main/img/B6.png' }, // 大小6
+      { size: 180,  color: '#FF8000', score: 128, image: 'https://raw.githubusercontent.com/410736030/PBEG/main/img/B7.png' }, // 大小7
+      { size: 230,  color: '#8000FF', score: 256, image: 'https://raw.githubusercontent.com/410736030/PBEG/main/img/B8.png' }, // 大小8
+      { size: 280,  color: '#FF0080', score: 512, image: 'https://raw.githubusercontent.com/410736030/PBEG/main/img/B9.png' }, // 大小9
+      { size: 400,  color: '#0080FF', score: 1024,image: 'https://raw.githubusercontent.com/410736030/PBEG/main/img/B10.png' }  // 大小10
+    ];
+    const MAX_INDEX_FOR_RANDOM = 4;  
+    // 容器大小
+    let containerWidth  = 600;
+    let containerHeight = 500;
+
+    // 警戒線位置
+    const WARNING_ZONE  = 100;
+    // 若球底部 < WARNING_ZONE，持續 1 秒 => game over
+    const TIME_TO_END   = 1; // 1 秒
+
+    // localStorage
+    const STORAGE_KEY   = 'myRussiantetrisGame';
+
+    // 狀態
+    let balls = [];
+    let currentBall = null;
+    let nextBall    = null;
+    let score       = 0;
+    let bestScore   = 0;
+    let gameOver    = false;
+
+    // 不再限制放置 => 可連續點擊
+    // 物理參數
+    let gravity  = 0.5;
+    let friction = 0.99;
+
+    let mouseX = 0;
+
+    // 用於「底部已超過警戒線」的時間累計
+    // key=ball.id => 累積時間
+    let topZoneTimeMap = {};
+
+    // 前一偵時間
+    let lastTimestamp = 0;
+
+    // DOM
+    const gameContainer   = document.getElementById('gameContainer');
+    const scoreText       = document.getElementById('scoreText');
+    const bestScoreText   = document.getElementById('bestScoreText');
+    const nextBallPreview = document.getElementById('nextBallPreview');
+    const gameOverMask    = document.getElementById('gameOverMask');
+    const finalScoreText  = document.getElementById('finalScoreText');
+    const restartBtn      = document.getElementById('restartBtn');
+    const warningLine     = document.getElementById('warningLine');
+    const legendContainer = document.getElementById('legendContainer');
+
+    /********************************************************
+     * B. 初始化
+     ********************************************************/
+    window.addEventListener('load', initGame);
+    function initGame() {
+      // 讀取 bestScore
+      const saved = localStorage.getItem(STORAGE_KEY);
+      bestScore = saved ? parseInt(saved,10) : 0;
+      bestScoreText.textContent = '歷史最佳: ' + bestScore;
+
+      mouseX = containerWidth/2;
+
+      // 顯示警戒線
+      warningLine.style.top = WARNING_ZONE + 'px';
+      warningLine.style.display = 'block';
+
+      // 生成 2 顆球
+      generateNewBall();
+      generateNewBall();
+
+      // 綁定
+      gameContainer.addEventListener('pointermove', handlePointerMove);
+      gameContainer.addEventListener('pointerdown', handleContainerDown);
+      restartBtn.addEventListener('pointerdown', resetGame);
+
+      createLegend();
+
+      requestAnimationFrame(gameLoop);
+    }
+
+    /********************************************************
+     * C. 建立對照表
+     ********************************************************/
+    function createLegend() {
+      BALL_CONFIGS.forEach((cfg, i) => {
+        const div = document.createElement('div');
+        div.className = 'legend-ball';
+
+        const ballDiv = document.createElement('div');
+        ballDiv.className = 'ball-shape';
+        if (cfg.image) {
+          ballDiv.style.backgroundImage = `url(${cfg.image})`;
+          ballDiv.style.backgroundColor = 'transparent';
+        } else {
+          ballDiv.style.backgroundImage = 'none';
+          ballDiv.style.backgroundColor = cfg.color;
+        }
+
+        const label = document.createElement('span');
+        //label.textContent = `大小${i+1}`;
+
+        div.appendChild(ballDiv);
+        div.appendChild(label);
+        legendContainer.appendChild(div);
+      });
+    }
+
+    /********************************************************
+     * D. 生成球
+     ********************************************************/
+    function generateNewBall() {
+      const idx = Math.floor(Math.random() * MAX_INDEX_FOR_RANDOM);
+      const cfg = BALL_CONFIGS[idx];
+      const newData = {
+        size: cfg.size,
+        color: cfg.color,
+        score: cfg.score,
+        image: cfg.image
+      };
+      if (!currentBall) {
+        currentBall = newData;
+      } else {
+        nextBall = newData;
+        // 預覽(30×30)
+        if (nextBall.image) {
+          nextBallPreview.style.backgroundImage = `url(${nextBall.image})`;
+          nextBallPreview.style.backgroundColor = 'transparent';
+        } else {
+          nextBallPreview.style.backgroundImage = 'none';
+          nextBallPreview.style.backgroundColor = nextBall.color;
+        }
+      }
+    }
+
+    /********************************************************
+     * E. 滑鼠
+     ********************************************************/
+    function handlePointerMove(e) {
+      if (gameOver || !currentBall) return;
+      const rect = gameContainer.getBoundingClientRect();
+      let x = e.clientX - rect.left;
+      let r = currentBall.size/2;
+      if (x< r) x= r;
+      if (x> containerWidth - r) x= containerWidth - r;
+      mouseX = x;
+    }
+
+    function handleContainerDown(e) {
+      if (gameOver) return;
+      if (currentBall) {
+        placeCurrentBall();
+      }
+    }
+
+    // 放置球 => 立即出現在頂端( y = r )
+    function placeCurrentBall() {
+      const r=currentBall.size/2;
+      const newBall={
+        x: mouseX,
+        y: r,
+        size: currentBall.size,
+        color: currentBall.color,
+        score: currentBall.score,
+        image: currentBall.image,
+        velocityX: 0,
+        velocityY: 0,
+        id: Date.now()+Math.random()
+      };
+      balls.push(newBall);
+
+      // 放置加分 => 10*(sizeLevel)
+      const idx= BALL_CONFIGS.findIndex(c=> c.size===newBall.size);
+      const level= idx+1;
+      score += (10*level);
+      scoreText.textContent='分數: '+score;
+
+      currentBall = nextBall;
+      generateNewBall();
+    }
+
+    /********************************************************
+     * F. 遊戲循環
+     ********************************************************/
+    function gameLoop(timestamp) {
+      let delta=0;
+      if (lastTimestamp) {
+        delta= (timestamp - lastTimestamp)/1000; // 秒
+      }
+      lastTimestamp=timestamp;
+
+      if (!gameOver) {
+        updateBalls();
+        checkCollisions();
+        checkTopZone(delta);  // 在這裡做「連續1秒」判斷
+        render();
+      }
+      requestAnimationFrame(gameLoop);
+    }
+
+    /********************************************************
+     * G. 更新球(重力+反彈)
+     ********************************************************/
+    function updateBalls() {
+      for (let i=0; i<balls.length; i++) {
+        let b= balls[i];
+        b.velocityY += gravity;
+        let newY = b.y + b.velocityY;
+
+        // 底部
+        if (newY + b.size/2 >= containerHeight) {
+          newY= containerHeight - b.size/2;
+          // 若速度很小 => 歸零
+          if (Math.abs(b.velocityY)<1) {
+            b.velocityY=0;
+          } else {
+            b.velocityY = -0.3*b.velocityY;
+          }
+        }
+
+        // 左右
+        let newX= b.x + b.velocityX;
+        if (newX - b.size/2 <0) {
+          newX= b.size/2;
+          b.velocityX= -0.5*b.velocityX;
+        }
+        if (newX + b.size/2 > containerWidth) {
+          newX= containerWidth- b.size/2;
+          b.velocityX= -0.5*b.velocityX;
+        }
+
+        b.x= newX;
+        b.y= newY;
+        b.velocityX *= friction;
+      }
+    }
+
+    /********************************************************
+     * H. 碰撞檢查
+     ********************************************************/
+    function checkCollisions() {
+      for (let i=0; i<balls.length; i++) {
+        for (let j=i+1; j<balls.length; j++) {
+          let A=balls[i];
+          let B=balls[j];
+          let dx= A.x- B.x;
+          let dy= A.y- B.y;
+          let dist= Math.sqrt(dx*dx + dy*dy);
+          let minDist= (A.size+ B.size)/2;
+          if (dist< minDist) {
+            if (A.size=== B.size) {
+              mergeBalls(A,B,i,j);
+              return; // 合併後結構改變 =>先跳出
+            } else {
+              resolveCollision(A,B);
+              fixOverlap(A,B, dist, minDist);
+            }
+          }
+        }
+      }
+    }
+
+    function mergeBalls(A,B, idxA, idxB) {
+      let iCfg= BALL_CONFIGS.findIndex(c=> c.size=== A.size);
+      let nextIdx= iCfg+1;
+      if (nextIdx>= BALL_CONFIGS.length) {
+        nextIdx= BALL_CONFIGS.length-1;
+      }
+      const newCfg= BALL_CONFIGS[nextIdx];
+
+      let merged={
+        x: (A.x+ B.x)/2,
+        y: (A.y+ B.y)/2,
+        size: newCfg.size,
+        color: newCfg.color,
+        score: newCfg.score,
+        image: newCfg.image,
+        velocityX: 0,
+        velocityY: 0,
+        id: Date.now()+ Math.random()
+      };
+      let imax= Math.max(idxA, idxB);
+      let imin= Math.min(idxA, idxB);
+      balls.splice(imax,1);
+      balls.splice(imin,1);
+      balls.push(merged);
+
+      // 加分
+      score += newCfg.score;
+      scoreText.textContent='分數: '+ score;
+    }
+
+    function resolveCollision(A,B) {
+      let dx= B.x- A.x;
+      let dy= B.y- A.y;
+      let angle= Math.atan2(dy, dx);
+
+      let speedA= Math.sqrt(A.velocityX**2+ A.velocityY**2);
+      let speedB= Math.sqrt(B.velocityX**2+ B.velocityY**2);
+      let dirA= Math.atan2(A.velocityY, A.velocityX);
+      let dirB= Math.atan2(B.velocityY, B.velocityX);
+
+      let vxA= speedA* Math.cos(dirA- angle);
+      let vyA= speedA* Math.sin(dirA- angle);
+      let vxB= speedB* Math.cos(dirB- angle);
+      let vyB= speedB* Math.sin(dirB- angle);
+
+      let tmp= vxA; vxA= vxB; vxB= tmp;
+
+      let finalAX= Math.cos(angle)* vxA- Math.sin(angle)* vyA;
+      let finalAY= Math.sin(angle)* vxA+ Math.cos(angle)* vyA;
+      let finalBX= Math.cos(angle)* vxB- Math.sin(angle)* vyB;
+      let finalBY= Math.sin(angle)* vxB+ Math.cos(angle)* vyB;
+
+      A.velocityX= finalAX; A.velocityY= finalAY;
+      B.velocityX= finalBX; B.velocityY= finalBY;
+    }
+
+    function fixOverlap(A,B, dist, minDist) {
+      let overlap= (minDist- dist)/2;
+      let angle= Math.atan2(B.y- A.y, B.x- A.x);
+      A.x-= overlap* Math.cos(angle);
+      A.y-= overlap* Math.sin(angle);
+      B.x+= overlap* Math.cos(angle);
+      B.y+= overlap* Math.sin(angle);
+    }
+
+    /********************************************************
+     * I. 「連續 1 秒」超出警戒線 => 結束
+     ********************************************************/
+    function checkTopZone(delta) {
+      for (let b of balls) {
+        // 若 bottom < WARNING_ZONE => 累計時間
+        let bottom= b.y+ b.size/2;
+        if (bottom< WARNING_ZONE) {
+          // 累計
+          if (!topZoneTimeMap[b.id]) {
+            topZoneTimeMap[b.id]= 0;
+          }
+          topZoneTimeMap[b.id]+= delta;
+          // 若連續超過 1 秒 => 結束
+          if (topZoneTimeMap[b.id]>= TIME_TO_END) {
+            endGame();
+            return;
+          }
+        } else {
+          // 否則時間歸 0
+          topZoneTimeMap[b.id]= 0;
+        }
+      }
+    }
+
+    /********************************************************
+     * J. 繪製
+     ********************************************************/
+    function render() {
+      const oldEls= gameContainer.querySelectorAll('.placed-ball, .current-ball');
+      oldEls.forEach(el=>el.remove());
+
+      if (currentBall && !gameOver) {
+        const cb= document.createElement('div');
+        cb.className= 'current-ball';
+        cb.style.width= currentBall.size+'px';
+        cb.style.height= currentBall.size+'px';
+        if (currentBall.image) {
+          cb.style.backgroundImage= `url(${currentBall.image})`;
+          cb.style.backgroundColor= 'transparent';
+        } else {
+          cb.style.backgroundImage= 'none';
+          cb.style.backgroundColor= currentBall.color;
+        }
+        let r= currentBall.size/2;
+        // top=0 => 球頂貼容器頂 => 保證可見
+        cb.style.left= (mouseX- r)+'px';
+        cb.style.top= '0px';
+        gameContainer.appendChild(cb);
+      }
+
+      for (let b of balls) {
+        const pb= document.createElement('div');
+        pb.className= 'placed-ball';
+        pb.style.width= b.size+'px';
+        pb.style.height= b.size+'px';
+        if (b.image) {
+          pb.style.backgroundImage= `url(${b.image})`;
+          pb.style.backgroundColor= 'transparent';
+        } else {
+          pb.style.backgroundImage= 'none';
+          pb.style.backgroundColor= b.color;
+        }
+        pb.style.left= (b.x- b.size/2)+'px';
+        pb.style.top= (b.y- b.size/2)+'px';
+        gameContainer.appendChild(pb);
+      }
+    }
+
+    /********************************************************
+     * K. 結束 & 重置
+     ********************************************************/
+    function endGame() {
+      if (gameOver) return;
+      gameOver= true;
+      gameOverMask.style.display= 'flex';
+      finalScoreText.textContent= '最終分數: '+ score;
+
+      // 更新 best
+      let saved= localStorage.getItem(STORAGE_KEY);
+      let oldBest= saved? parseInt(saved,10):0;
+      if (score> oldBest) {
+        localStorage.setItem(STORAGE_KEY, score);
+        bestScore= score;
+      }
+    }
+
+    function resetGame(e) {
+      e.stopPropagation();
+      gameOver= false;
+      balls= [];
+      score= 0;
+      topZoneTimeMap= {}; // 重置累計時間
+      lastTimestamp= 0;
+
+      scoreText.textContent= '分數: 0';
+      finalScoreText.textContent= '最終分數: 0';
+      gameOverMask.style.display= 'none';
+
+      currentBall= null;
+      nextBall= null;
+      mouseX= containerWidth/2;
+
+      generateNewBall();
+      generateNewBall();
+
+      // 重新讀 best
+      let saved= localStorage.getItem(STORAGE_KEY);
+      bestScore= saved? parseInt(saved,10): 0;
+      bestScoreText.textContent= '歷史最佳: '+ bestScore;
+    }
+  </script>
+</body>
+</html>
