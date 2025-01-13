@@ -165,29 +165,55 @@
   }
   
   /* ========== Skills 區 (酷炫技能樹) ========== */
+  /**********************************
+   * 基本區塊排版
+   **********************************/
   .skills-section {
     padding: 4rem 2rem;
   }
-  .skill-tree {
-    margin-top: 2rem;
-    display: flex;
-    justify-content: left;
+  .section-title {
+    font-size: 2rem;
+    margin-bottom: 1.5rem;
+    text-align: center;
+    color: #00eccf; /* 也可改其他顏色 */
   }
+
+  /* 使兩棵技能樹左右並排 */
+  .skill-trees-container {
+    display: flex;
+    justify-content: space-evenly; /* 或 space-between, 依喜好 */
+    gap: 2rem;                     /* 樹與樹之間的間距 */
+    flex-wrap: wrap;              /* 如果視窗太小，會自動換行 */
+  }
+
+  .skill-tree {
+    width: 300px; /* 或依你需求 */
+    min-width: 250px;
+    /* background: rgba(255,255,255,0.05);  若想讓區塊有個底可加 */
+    border-radius: 8px;
+    padding: 1rem;
+  }
+
+  /**********************************
+  * 共同的樹狀線條結構
+  **********************************/
   .skill-tree ul {
     list-style: none;
-    position: relative;
-    padding-left: 1.5rem; /* 為了預留樹狀線 */
     margin: 0;
+    padding: 0;
+    position: relative;
+    padding-left: 1.5rem;  /* 預留線的空間 */
   }
   .skill-tree ul::before {
     content: "";
     position: absolute;
-    left: 0.6rem; /* 線條靠左 */
+    left: 0.6rem; 
     top: 0;
     bottom: 0;
     width: 2px;
-    background: #00eccf; /* 樹狀的線條顏色 */
+    background: #00eccf; /* 預設樹線顏色 - 給 CSIE 用 */
   }
+  /* 每個 li 向下連線 */
   .skill-tree li {
     margin: 1rem 0;
     position: relative;
@@ -197,31 +223,62 @@
     position: absolute;
     width: 10px;
     height: 2px;
-    left: -10px; /* 配合線的定位 */
-    top: 12px;   /* 調整圓點的位置 */
+    left: -10px; 
+    top: 12px;   /* 視節點大小微調 */
     background: #00eccf;
   }
-  .skill-tree li:first-child::before {
-    top: 0.6rem;
-  }
   .skill-node {
-    padding: 0.5rem 1rem;
+    padding: 0.4rem 0.8rem;
     background: rgba(255,255,255,0.1);
     border: 1px solid rgba(255,255,255,0.2);
     border-radius: 4px;
-    color: #00eccf;
+    color: #00eccf;           /* 預設文字顏色 - 給 CSIE 用 */
     transition: transform 0.2s, box-shadow 0.2s;
   }
   .skill-node:hover {
     transform: scale(1.05);
-    box-shadow: 0 0 10px #00eccf;
+    box-shadow: 0 0 10px #00eccf; /* 霓虹效果(藍綠) */
   }
+  /* 巢狀子清單(繼續往下分支) */
   .skill-tree ul ul {
-    margin-left: 1.5rem; /* 巢狀結構 */
+    margin-left: 1.5rem;
   }
   .skill-tree ul ul::before {
     left: 0.6rem; 
   }
+
+  /**********************************
+  * # 針對 DAS (skill-tree-das) 要紅色 + 螢光
+  **********************************/
+  .skill-tree-das ul::before {
+    background: #ff6e6e;  /* DAS 樹線改為紅色 */
+  }
+  .skill-tree-das li::before {
+    background: #ff6e6e;  /* DAS li連線 */
+  }
+  .skill-tree-das .skill-node {
+    color: #ff6e6e;       /* DAS 節點文字顏色 */
+    border-color: rgba(255,255,255,0.2);
+  }
+  .skill-tree-das .skill-node:hover {
+    box-shadow: 0 0 10px #ff6e6e; /* 紅色霓虹 */
+  }
+  /* 若想每層有不同顏色/大小，可再自行細分 */
+
+  /**********************************
+  * RWD (視窗太窄時, 兩棵樹上下疊)
+  **********************************/
+  @media (max-width: 768px) {
+    .skill-trees-container {
+      flex-direction: column;
+      align-items: center;
+    }
+    .skill-tree {
+      width: 100%;
+      max-width: 500px; /* or any suitable size */
+    }
+  }
+
   
   /* ========== Footer 區 ========== */
   .footer-section {
