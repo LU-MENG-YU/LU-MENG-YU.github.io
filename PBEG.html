@@ -20,20 +20,25 @@
       opacity: 0.9;
     }
 
+    body {
+      padding-top: 70px; /* 視 header 高度微調 */
+    }
+
     .main {
       display: flex;
       flex-direction: column;
       align-items: center;
       width: 100%;
       box-sizing: border-box;
-      /* 不再設定 height: 100%;，讓內容可以超過一個視窗高時可以捲動 */
-      margin-bottom: 2rem; /* 給點底部空間 */
+      margin-bottom: 2rem;
     }
 
     h1 {
       margin-top: 1rem;
       margin-bottom: 0.5rem;
       text-align: center;
+      color: #fff; 
+      text-shadow: 1px 1px 2px #000; 
     }
 
     /******************************************
@@ -193,11 +198,14 @@
     color: #00eccf;
     font-size: 1.3rem;
     line-height: 1.4;
+    margin: 0;
   }
   .nav ul {
     list-style: none;
     display: flex;
     gap: 1.5rem;
+    margin: 0;
+    padding: 0;
   }
   .nav ul li a {
     text-decoration: none;
