@@ -189,7 +189,7 @@
   .skill-tree {
     width: 300px; /* 或依你需求 */
     min-width: 250px;
-    /* background: rgba(255,255,255,0.05);  若想讓區塊有個底可加 */
+    /* background: rgba(255,255,255,0.05);  若想讓區塊有底可加 */
     border-radius: 8px;
     padding: 1rem;
   }
