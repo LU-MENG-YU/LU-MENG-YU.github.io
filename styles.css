@@ -171,11 +171,6 @@
   .skills-section {
     padding: 4rem 2rem;
   }
-  .section-title {
-    font-size: 2rem;
-    margin-bottom: 1.5rem;
-    color: #00eccf; /* 也可改其他顏色 */
-  }
 
   /* 使兩棵技能樹左右並排 */
   .skill-trees-container {
