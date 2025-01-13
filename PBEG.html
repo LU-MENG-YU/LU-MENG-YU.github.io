@@ -13,8 +13,6 @@
       margin: 0;
       padding: 0;
       width: 100%;
-      height: 100vh;
-      overflow: hidden;
       touch-action: none;
       font-family: sans-serif;
       background: url('https://raw.githubusercontent.com/410736030/PBEG/main/img/BG.png') no-repeat center center fixed;
@@ -27,8 +25,9 @@
       flex-direction: column;
       align-items: center;
       width: 100%;
-      height: 100%;
       box-sizing: border-box;
+      /* 不再設定 height: 100%;，讓內容可以超過一個視窗高時可以捲動 */
+      margin-bottom: 2rem; /* 給點底部空間 */
     }
 
     h1 {
