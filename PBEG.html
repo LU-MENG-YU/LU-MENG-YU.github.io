@@ -183,9 +183,9 @@
     }
       /* ========== Sticky Header ========== */
   .header-section {
-    position: sticky; 
+    position: fixed; /*sticky*/
     top: 0;
-    width: 100%;
+    width: 97%;
     z-index: 999;
     display: flex;
     align-items: center;
@@ -193,19 +193,15 @@
     padding: 1rem 2rem;
     background: rgb(0, 0, 0,0.5);
   }
-  /* 為了避免內容被 header 蓋住，可以給 body 或主要容器加上 padding-top */
   .logo h1 {
     color: #00eccf;
     font-size: 1.3rem;
     line-height: 1.4;
-    margin: 0;
   }
   .nav ul {
     list-style: none;
     display: flex;
     gap: 1.5rem;
-    margin: 0;
-    padding: 0;
   }
   .nav ul li a {
     text-decoration: none;
@@ -219,7 +215,7 @@
   </style>
 </head>
 <body>
-    <header class="header-section">
+      <header class="header-section">
         <div class="logo">
           <h1>PBEG</h1>
         </div>
