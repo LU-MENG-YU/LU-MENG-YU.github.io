@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Neon Shooter</title>
+  <style>
+    /* --- 全局設定 --- */
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: #000;
+      overflow: hidden;
+      font-family: sans-serif;
+    }
+
+    body {
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+      -webkit-text-size-adjust: none;
+      -webkit-overflow-scrolling: touch;
+      user-select: none;
+    }
+
+    canvas {
+      display: block;
+      margin: 0 auto;
+      background: radial-gradient(circle at center, #090b0f 30%, #000 90%);
+      position: relative;
+      z-index: 1; /* 讓星空背景在下方畫布後面 */
+    }
+
+    /* --- 手機上的虛擬按鈕 --- */
+    .touch-controls {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 10px;
+      z-index: 9999; /* 以免被其他元素遮蓋 */
+    }
+    .touch-controls.hidden {
+      display: none; /* 用來隱藏元素的 class */
+    }
+    .btn {
+      width: 60px;
+      height: 60px;
+      border: 2px solid #fff;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.1);
+      color: #fff;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      user-select: none;
+      cursor: pointer;
+    }
+    .btn:active {
+      background: rgba(255,255,255,0.3);
+    }
+
+    /* --- 遊戲結束的重來按鈕 --- */
+    #restartBtn {
+      position: absolute;
+      top: 60%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      padding: 16px 24px;
+      font-size: 18px;
+      background-color: rgba(255, 100, 100, 0.8);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      z-index: 10000;
+      display: none; /* 遊戲結束時才顯示 */
+    }
+    #restartBtn:hover {
+      background-color: rgba(255, 100, 100, 1);
+    }
+  </style>
+</head>
+
+<body>
+  <!-- 遊戲畫布 -->
+  <canvas id="gameCanvas" width="480" height="800"></canvas>
+  
+  <!-- 手機用虛擬按鈕，預設先顯示，稍後用JS動態決定是否隱藏 -->
+  <div class="touch-controls" id="touchControls">
+    <div class="btn" id="leftBtn">←</div>
+    <div class="btn" id="rightBtn">→</div>
+    <div class="btn" id="shootBtn">★</div>
+  </div>
+
+  <!-- 重來按鈕 -->
+  <button id="restartBtn">Restart</button>
+
+  <script>
+    /**********************************
+     * 0. 判斷是否為手機裝置並動態顯示按鈕
+     **********************************/
+    function isMobileDevice() {
+      return /Android|iPhone|iPad|iPod|Opera Mini|IEMobile|WPDesktop/i.test(navigator.userAgent);
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      const touchControls = document.getElementById('touchControls');
+      // 偵測裝置，若非手機，就隱藏虛擬按鈕
+      if (!isMobileDevice()) {
+        touchControls.classList.add('hidden');
+      }
+    });
+
+    /********************
+     *  1. 基本參數設定  *
+     ********************/
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    const CANVAS_WIDTH = canvas.width;
+    const CANVAS_HEIGHT = canvas.height;
+
+    // 玩家飛船
+    let player = {
+      x: CANVAS_WIDTH / 2,
+      y: CANVAS_HEIGHT - 60,
+      width: 40,
+      height: 40,
+      speed: 5,
+      color: '#0ff',
+      movingLeft: false,
+      movingRight: false
+    };
+
+    // 子彈、敵人、爆炸、星星
+    let bullets = [];
+    let enemies = [];
+    let explosions = []; // 爆炸效果
+    let stars = [];      // 星星背景
+
+    // 時間控制
+    let lastEnemySpawnTime = 0;
+    const enemySpawnInterval = 1000; // 毫秒(1秒產生一個敵人)
+    let lastBulletTime = 0;
+    const bulletInterval = 250;      // 毫秒(子彈自動發射間隔)
+
+    // 分數
+    let score = 0;
+    let highScore = 0; // 從 localStorage 讀取或初始為0
+    let gameOver = false;
+
+    // DOM 元素
+    const restartBtn = document.getElementById('restartBtn');
+    const leftBtn = document.getElementById('leftBtn');
+    const rightBtn = document.getElementById('rightBtn');
+    const shootBtn = document.getElementById('shootBtn');
+
+    /********************
+     *  2. 音效載入示例  *
+     ********************/
+    // 若沒有這些音檔，可自行調整或註解相關代碼
+    const bulletSound = new Audio('bullet.wav');
+    const explosionSound = new Audio('explosion.wav');
+    const gameOverSound = new Audio('gameover.wav');
+
+    function playSound(sound) {
+      if (!sound) return;
+      sound.currentTime = 0; // 從頭開始播
+      sound.play().catch(e => {
+        // 部分瀏覽器需要使用者互動後才能播放音效，可在此提示或略過
+      });
+    }
+
+    /********************
+     *  3. 遊戲初始化   *
+     ********************/
+    function initGame() {
+      // 從 localStorage 讀取最高分
+      highScore = localStorage.getItem('NeonShooterHighScore') || 0;
+
+      // 重置玩家資料
+      player = {
+        x: CANVAS_WIDTH / 2,
+        y: CANVAS_HEIGHT - 60,
+        width: 40,
+        height: 40,
+        speed: 5,
+        color: '#0ff',
+        movingLeft: false,
+        movingRight: false
+      };
+
+      // 重置遊戲物件
+      bullets = [];
+      enemies = [];
+      explosions = [];
+      stars = [];
+
+      // 重置分數及控制
+      score = 0;
+      gameOver = false;
+      lastEnemySpawnTime = 0;
+      lastBulletTime = 0;
+
+      // 產生初始星星
+      createStars(80);
+
+      // 隱藏重來按鈕
+      restartBtn.style.display = 'none';
+    }
+
+    /********************
+     *  4. 事件監聽設定  *
+     ********************/
+    // 手機虛擬按鈕
+    leftBtn.addEventListener('touchstart', () => { player.movingLeft = true; });
+    leftBtn.addEventListener('touchend', () => { player.movingLeft = false; });
+    rightBtn.addEventListener('touchstart', () => { player.movingRight = true; });
+    rightBtn.addEventListener('touchend', () => { player.movingRight = false; });
+    // 如果還想要手動射擊，可保留 shootBtn：
+    // shootBtn.addEventListener('touchstart', shoot);
+
+    // 鍵盤事件
+    window.addEventListener('keydown', (e) => {
+      if (e.code === 'ArrowLeft') player.movingLeft = true;
+      if (e.code === 'ArrowRight') player.movingRight = true;
+      // 如果想要PC上空白鍵也能發射，可保留：
+      // if (e.code === 'Space') shoot();
+    });
+    window.addEventListener('keyup', (e) => {
+      if (e.code === 'ArrowLeft') player.movingLeft = false;
+      if (e.code === 'ArrowRight') player.movingRight = false;
+    });
+
+    // 重來按鈕
+    restartBtn.addEventListener('click', () => {
+      initGame();
+      requestAnimationFrame(update);
+    });
+
+    /********************
+     *  5. 遊戲主要流程  *
+     ********************/
+    function update(timestamp) {
+      if (gameOver) return; // 若結束就不再更新
+
+      // 清空畫布
+      ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+
+      // 更新並繪製星星背景
+      updateStars();
+
+      // 移動玩家
+      if (player.movingLeft && (player.x - player.width / 2) > 0) {
+        player.x -= player.speed;
+      }
+      if (player.movingRight && (player.x + player.width / 2) < CANVAS_WIDTH) {
+        player.x += player.speed;
+      }
+      // 繪製玩家
+      drawPlayer();
+
+      // 自動發射子彈
+      if (timestamp - lastBulletTime > bulletInterval) {
+        shoot();
+        lastBulletTime = timestamp;
+      }
+
+      // 更新子彈
+      for (let i = 0; i < bullets.length; i++) {
+        const b = bullets[i];
+        b.y -= b.speed;
+        // 繪製子彈
+        ctx.fillStyle = b.color;
+        ctx.fillRect(b.x - b.width/2, b.y - b.height/2, b.width, b.height);
+        // 超出畫面上方移除
+        if (b.y + b.height < 0) {
+          bullets.splice(i, 1);
+          i--;
+        }
+      }
+
+      // 產生敵人
+      if (timestamp - lastEnemySpawnTime > enemySpawnInterval) {
+        spawnEnemy();
+        lastEnemySpawnTime = timestamp;
+      }
+
+      // 更新敵人
+      for (let j = 0; j < enemies.length; j++) {
+        const e = enemies[j];
+        e.y += e.speed;
+        // 繪製敵人
+        ctx.fillStyle = e.color;
+        ctx.fillRect(e.x, e.y, e.width, e.height);
+
+        // 子彈打到敵人
+        for (let i = 0; i < bullets.length; i++) {
+          const b = bullets[i];
+          if (isColliding(b, e)) {
+            // 敵人爆炸
+            createExplosion(e.x + e.width/2, e.y + e.height/2);
+            playSound(explosionSound);
+
+            // 移除敵人 & 子彈
+            enemies.splice(j, 1);
+            bullets.splice(i, 1);
+            score++;
+            j--;
+            break;
+          }
+        }
+
+        // 敵人撞到玩家
+        if (isColliding(player, e)) {
+          // 玩家爆炸
+          createExplosion(player.x, player.y);
+          // 敵人爆炸
+          createExplosion(e.x + e.width/2, e.y + e.height/2);
+          playSound(explosionSound);
+
+          // 遊戲結束流程
+          gameOverSequence();
+          return;
+        }
+
+        // 敵人超出螢幕底部
+        if (e.y > CANVAS_HEIGHT) {
+          enemies.splice(j, 1);
+          j--;
+        }
+      }
+
+      // 更新並繪製爆炸特效
+      updateExplosions();
+
+      // 分數顯示
+      ctx.fillStyle = '#fff';
+      ctx.font = '20px Arial';
+      ctx.fillText('Score: ' + score, 10, 30);
+      ctx.fillText('High Score: ' + highScore, 10, 55);
+
+      requestAnimationFrame(update);
+    }
+
+    /********************
+     *  6. 函式區塊     *
+     ********************/
+
+    // 發射子彈
+    function shoot() {
+      bullets.push({
+        x: player.x,
+        y: player.y - 10,
+        width: 5,
+        height: 10,
+        speed: 7,
+        color: '#f0f'
+      });
+      playSound(bulletSound);
+    }
+
+    // 產生敵人
+    function spawnEnemy() {
+      const enemyWidth = 40;
+      const enemyHeight = 40;
+      const x = Math.random() * (CANVAS_WIDTH - enemyWidth);
+      enemies.push({
+        x: x,
+        y: -enemyHeight,
+        width: enemyWidth,
+        height: enemyHeight,
+        speed: 2 + Math.random() * 3,
+        color: 'hsl(' + Math.floor(Math.random() * 360) + ', 80%, 60%)'
+      });
+    }
+
+    // 繪製玩家
+    function drawPlayer() {
+      ctx.fillStyle = player.color;
+      ctx.fillRect(
+        player.x - player.width / 2,
+        player.y - player.height / 2,
+        player.width,
+        player.height
+      );
+    }
+
+    // 判斷碰撞
+    function isColliding(a, b) {
+      // a 及 b 皆為 {x, y, width, height} 格式 (或多半相近)
+      // 由於玩家/子彈的座標採用中心點繪製，需稍作調整
+      const aLeft   = a.x - (a.width / 2 || 0);
+      const aRight  = a.x + (a.width / 2 || a.width);
+      const aTop    = a.y - (a.height / 2 || 0);
+      const aBottom = a.y + (a.height / 2 || a.height);
+
+      const bLeft   = b.x;
+      const bRight  = b.x + b.width;
+      const bTop    = b.y;
+      const bBottom = b.y + b.height;
+
+      return (
+        aRight > bLeft &&
+        aLeft < bRight &&
+        aBottom > bTop &&
+        aTop < bBottom
+      );
+    }
+
+    // 爆炸效果
+    function createExplosion(x, y) {
+      explosions.push({
+        x: x,
+        y: y,
+        radius: 0,
+        maxRadius: 30,
+        alpha: 1.0
+      });
+    }
+    function updateExplosions() {
+      for (let i = 0; i < explosions.length; i++) {
+        let ex = explosions[i];
+        ex.radius += 1.5;
+        ex.alpha -= 0.03;
+
+        ctx.beginPath();
+        ctx.arc(ex.x, ex.y, ex.radius, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(255, 128, 0, ' + ex.alpha + ')';
+        ctx.fill();
+
+        if (ex.alpha <= 0) {
+          explosions.splice(i, 1);
+          i--;
+        }
+      }
+    }
+
+    // 產生星星
+    function createStars(count) {
+      for (let i = 0; i < count; i++) {
+        stars.push({
+          x: Math.random() * CANVAS_WIDTH,
+          y: Math.random() * CANVAS_HEIGHT,
+          size: Math.random() * 2,
+          speed: 0.5 + Math.random() * 0.5
+        });
+      }
+    }
+    // 更新星星
+    function updateStars() {
+      ctx.save();
+      ctx.fillStyle = '#fff';
+      for (let i = 0; i < stars.length; i++) {
+        const s = stars[i];
+        s.y += s.speed; // 星星向下飄
+        if (s.y > CANVAS_HEIGHT) {
+          s.y = 0;
+          s.x = Math.random() * CANVAS_WIDTH;
+        }
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+
+    // 遊戲結束流程
+    function gameOverSequence() {
+      playSound(gameOverSound);
+      gameOver = true;
+
+      // 更新最高分
+      if (score > highScore) {
+        highScore = score;
+        localStorage.setItem('NeonShooterHighScore', highScore);
+      }
+
+      // 半透明覆蓋
+      ctx.fillStyle = 'rgba(0,0,0,0.5)';
+      ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+
+      // 顯示字樣
+      ctx.fillStyle = '#ff4040';
+      ctx.font = '36px Arial';
+      ctx.fillText('Game Over!', CANVAS_WIDTH / 2 - 80, CANVAS_HEIGHT / 2);
+      ctx.fillStyle = '#fff';
+      ctx.font = '24px Arial';
+      ctx.fillText('Score: ' + score, CANVAS_WIDTH / 2 - 40, CANVAS_HEIGHT / 2 + 40);
+      ctx.fillText('High Score: ' + highScore, CANVAS_WIDTH / 2 - 60, CANVAS_HEIGHT / 2 + 70);
+
+      // 顯示 Restart 按鈕
+      restartBtn.style.display = 'block';
+    }
+
+    /********************
+     *  7. 啟動遊戲     *
+     ********************/
+    initGame();
+    requestAnimationFrame(update);
+  </script>
+</body>
+</html>
