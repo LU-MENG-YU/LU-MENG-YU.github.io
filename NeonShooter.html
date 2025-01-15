@@ -43,7 +43,7 @@
     .touch-controls.hidden {
       display: none; /* 用來隱藏元素的 class */
     }
-    .btn {
+    .btn_left {
       width: 60px;
       height: 60px;
       border: 2px solid #fff;
@@ -56,6 +56,22 @@
       justify-content: center;
       user-select: none;
       cursor: pointer;
+      left: 10%;
+    }
+    .btn_right {
+      width: 60px;
+      height: 60px;
+      border: 2px solid #fff;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.1);
+      color: #fff;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      user-select: none;
+      cursor: pointer;
+      right: 10%;
     }
     .btn:active {
       background: rgba(255,255,255,0.3);
@@ -89,9 +105,8 @@
   
   <!-- 手機用虛擬按鈕，預設先顯示，稍後用JS動態決定是否隱藏 -->
   <div class="touch-controls" id="touchControls">
-    <div class="btn" id="leftBtn">←</div>
-    <div class="btn" id="rightBtn">→</div>
-    <div class="btn" id="shootBtn">★</div>
+    <div class="btn_left" id="leftBtn">←</div>
+    <div class="btn_right" id="rightBtn">→</div>
   </div>
 
   <!-- 重來按鈕 -->
@@ -162,7 +177,7 @@
      ********************/
     // 若沒有這些音檔，可自行調整或註解相關代碼
     const bulletSound = new Audio('bullet.wav');
-    const explosionSound = new Audio('explosion.wav');
+    const explosionSound = new Audio('https://github.com/LU-MENG-YU/Neon-Shooter/raw/refs/heads/main/explosion.wav');
     const gameOverSound = new Audio('gameover.wav');
 
     function playSound(sound) {
