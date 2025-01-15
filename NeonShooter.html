@@ -176,9 +176,10 @@
      *  2. 音效載入示例  *
      ********************/
     // 若沒有這些音檔，可自行調整或註解相關代碼
-    const bulletSound = new Audio('bullet.wav');
+    const bulletSound = new Audio('https://github.com/LU-MENG-YU/Neon-Shooter/raw/refs/heads/main/bullet.wav');
     const explosionSound = new Audio('https://github.com/LU-MENG-YU/Neon-Shooter/raw/refs/heads/main/explosion.wav');
     const gameOverSound = new Audio('https://github.com/LU-MENG-YU/Neon-Shooter/raw/refs/heads/main/gameover.wav');
+    const BackGroundSound = new Audio('https://github.com/LU-MENG-YU/Neon-Shooter/raw/refs/heads/main/BG.wav');
 
     function playSound(sound) {
       if (!sound) return;
@@ -187,6 +188,7 @@
         // 部分瀏覽器需要使用者互動後才能播放音效，可在此提示或略過
       });
     }
+    playSound(BackGroundSound);
 
     /********************
      *  3. 遊戲初始化   *
