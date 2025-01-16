@@ -137,6 +137,11 @@
         let touchEndX = 0;
         let touchEndY = 0;
 
+        document.addEventListener('touchmove', function (e) {
+            e.preventDefault();
+        }, { passive: false });
+
+
         // Utility Functions
         const saveBestScore = () => {
             const bestScore = localStorage.getItem('bestScore') || 0;
@@ -299,9 +304,9 @@
                 }
             } else {
                 if (dy > 0) {
-                    handleMove('down');
-                } else {
                     handleMove('up');
+                } else {
+                    handleMove('down');
                 }
             }
         };
