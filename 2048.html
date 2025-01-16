@@ -132,6 +132,10 @@
         const boardSize = 4;
         let board = [];
         let score = 0;
+        let touchStartX = 0;
+        let touchStartY = 0;
+        let touchEndX = 0;
+        let touchEndY = 0;
 
         // Utility Functions
         const saveBestScore = () => {
@@ -275,6 +279,33 @@
             }
         };
 
+        const handleTouchStart = e => {
+            touchStartX = e.touches[0].clientX;
+            touchStartY = e.touches[0].clientY;
+        };
+
+        const handleTouchEnd = e => {
+            touchEndX = e.changedTouches[0].clientX;
+            touchEndY = e.changedTouches[0].clientY;
+
+            const dx = touchEndX - touchStartX;
+            const dy = touchEndY - touchStartY;
+
+            if (Math.abs(dx) > Math.abs(dy)) {
+                if (dx > 0) {
+                    handleMove('right');
+                } else {
+                    handleMove('left');
+                }
+            } else {
+                if (dy > 0) {
+                    handleMove('down');
+                } else {
+                    handleMove('up');
+                }
+            }
+        };
+
         document.addEventListener('keydown', e => {
             switch (e.key) {
                 case 'ArrowUp':
@@ -291,6 +322,9 @@
                     break;
             }
         });
+
+        document.addEventListener('touchstart', handleTouchStart);
+        document.addEventListener('touchend', handleTouchEnd);
 
         document.getElementById('restart-button').addEventListener('click', () => {
             score = 0;
