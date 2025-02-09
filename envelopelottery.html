@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <title>自己的紅包自己抽</title>
+  <style>
+    /* 基本樣式 */
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #fce4ec; /* 柔和背景色 */
+      margin: 0;
+      padding: 20px;
+      text-align: center;
+    }
+    h1 {
+      color: #c0392b;
+      margin-bottom: 20px;
+    }
+    /* 卡牌（紅包）容器 */
+    .envelope-container {
+      display: grid;
+      grid-template-columns: repeat(10, 1fr);
+      grid-gap: 15px;
+      justify-items: center;
+      margin-bottom: 0px;
+    }
+    /* 卡牌基礎設定，採用 3D 翻轉效果 */
+    .card {
+      width: 120px;
+      height: 160px;
+      perspective: 1000px;
+      cursor: pointer;
+    }
+    .card-inner {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      transition: transform 0.6s;
+      transform-style: preserve-3d;
+    }
+    /* 當卡牌加上 .flipped 時，執行翻轉 */
+    .card.flipped .card-inner {
+      transform: rotateY(180deg);
+    }
+    .card-face {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      backface-visibility: hidden;
+      border: 2px solid #d35400;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    /* 紅包封面：紅底白字 */
+    .card-front {
+      background-color: #e74c3c;
+      color: #fff;
+      font-size: 20px;
+    }
+    /* 翻轉後顯示的獎金面：金色背景、深紅文字 */
+    .card-back {
+      background-color: #f1c40f;
+      color: #c0392b;
+      font-size: 24px;
+      transform: rotateY(180deg);
+    }
+    /* 控制區：設定抽包數、顯示剩餘次數、總金額及重置按鈕 */
+    .controls {
+      margin-top: 20px;
+    }
+    .controls input[type="number"] {
+      width: 60px;
+      padding: 5px;
+      font-size: 16px;
+      margin-left: 10px;
+    }
+    .controls button {
+      padding: 8px 16px;
+      font-size: 16px;
+      margin: 0 10px;
+      background-color: #c0392b;
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .controls button:hover {
+      background-color: #e74c3c;
+    }
+    .info {
+      font-size: 18px;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h1>自己的紅包自己抽</h1>
+  
+  <!-- 紅包卡牌容器：10個卡牌以兩排顯示 -->
+  <div class="envelope-container">
+    <!-- 每個卡牌內含一個 card-inner，裡面有正面與反面 -->
+    <div class="card envelope" data-index="0">
+      <div class="card-inner">
+        <div class="card-face card-front">新年快樂</div>
+        <div class="card-face card-back"><span class="prize"></span></div>
+      </div>
+    </div>
+    <div class="card envelope" data-index="1">
+      <div class="card-inner">
+        <div class="card-face card-front">恭喜發財</div>
+        <div class="card-face card-back"><span class="prize"></span></div>
+      </div>
+    </div>
+    <div class="card envelope" data-index="2">
+      <div class="card-inner">
+        <div class="card-face card-front">萬事如意</div>
+        <div class="card-face card-back"><span class="prize"></span></div>
+      </div>
+    </div>
+    <div class="card envelope" data-index="3">
+      <div class="card-inner">
+        <div class="card-face card-front">年年有餘</div>
+        <div class="card-face card-back"><span class="prize"></span></div>
+      </div>
+    </div>
+    <div class="card envelope" data-index="4">
+      <div class="card-inner">
+        <div class="card-face card-front">青春永駐</div>
+        <div class="card-face card-back"><span class="prize"></span></div>
+      </div>
+    </div>
+    <div class="card envelope" data-index="5">
+      <div class="card-inner">
+        <div class="card-face card-front">心想事成</div>
+        <div class="card-face card-back"><span class="prize"></span></div>
+      </div>
+    </div>
+    <div class="card envelope" data-index="6">
+      <div class="card-inner">
+        <div class="card-face card-front">大吉大利</div>
+        <div class="card-face card-back"><span class="prize"></span></div>
+      </div>
+    </div>
+    <div class="card envelope" data-index="7">
+      <div class="card-inner">
+        <div class="card-face card-front">四季平安</div>
+        <div class="card-face card-back"><span class="prize"></span></div>
+      </div>
+    </div>
+    <div class="card envelope" data-index="8">
+      <div class="card-inner">
+        <div class="card-face card-front">財源廣進</div>
+        <div class="card-face card-back"><span class="prize"></span></div>
+      </div>
+    </div>
+    <div class="card envelope" data-index="9">
+      <div class="card-inner">
+        <div class="card-face card-front">花開富貴</div>
+        <div class="card-face card-back"><span class="prize"></span></div>
+      </div>
+    </div>
+    <div class="card envelope" data-index="0">
+        <div class="card-inner">
+          <div class="card-face card-front">事事順心</div>
+          <div class="card-face card-back"><span class="prize"></span></div>
+        </div>
+      </div>
+      <div class="card envelope" data-index="1">
+        <div class="card-inner">
+          <div class="card-face card-front">吉祥如意</div>
+          <div class="card-face card-back"><span class="prize"></span></div>
+        </div>
+      </div>
+      <div class="card envelope" data-index="2">
+        <div class="card-inner">
+          <div class="card-face card-front">幸福安康</div>
+          <div class="card-face card-back"><span class="prize"></span></div>
+        </div>
+      </div>
+      <div class="card envelope" data-index="3">
+        <div class="card-inner">
+          <div class="card-face card-front">鴻圖大展</div>
+          <div class="card-face card-back"><span class="prize"></span></div>
+        </div>
+      </div>
+      <div class="card envelope" data-index="4">
+        <div class="card-inner">
+          <div class="card-face card-front">前程似錦</div>
+          <div class="card-face card-back"><span class="prize"></span></div>
+        </div>
+      </div>
+      <div class="card envelope" data-index="5">
+        <div class="card-inner">
+          <div class="card-face card-front">一帆風順</div>
+          <div class="card-face card-back"><span class="prize"></span></div>
+        </div>
+      </div>
+      <div class="card envelope" data-index="6">
+        <div class="card-inner">
+          <div class="card-face card-front">青雲直上</div>
+          <div class="card-face card-back"><span class="prize"></span></div>
+        </div>
+      </div>
+      <div class="card envelope" data-index="7">
+        <div class="card-inner">
+          <div class="card-face card-front">金蛇迎春</div>
+          <div class="card-face card-back"><span class="prize"></span></div>
+        </div>
+      </div>
+      <div class="card envelope" data-index="8">
+        <div class="card-inner">
+          <div class="card-face card-front">蛇行天下</div>
+          <div class="card-face card-back"><span class="prize"></span></div>
+        </div>
+      </div>
+      <div class="card envelope" data-index="9">
+        <div class="card-inner">
+          <div class="card-face card-front">金蛇添翼</div>
+          <div class="card-face card-back"><span class="prize"></span></div>
+        </div>
+      </div>
+  </div>
+  
+  <!-- 控制區：設定抽取包數、顯示剩餘次數與總金額、重置按鈕 -->
+  <div class="controls">
+    <label for="drawCount">設定抽取紅包數量 (最多20包): </label>
+    <input type="number" id="drawCount" value="20" min="1" max="20">
+    <button id="setDrawCount">設定</button>
+    <div class="info">剩餘次數: <span id="remainingDraws">20</span></div>
+    <div class="info">總金額: <span id="totalAmount">0</span></div>
+    <button id="resetBtn">重置</button>
+  </div>
+  
+  <script>
+    /**********************
+     * 後台獎金機率設定 *
+     * 可依需求修改金額與機率 (注意所有機率總和必須為 1)
+     **********************/
+    const prizeConfig = [
+      { amount: 10, probability:  0.40 },
+      { amount: 20, probability:  0.30 },
+      { amount: 50, probability:  0.20 },
+      { amount: 100, probability: 0.10 }
+    ];
+
+    // 遊戲初始狀態
+    let totalAmount = 0;
+    let remainingDraws = 20; // 預設可抽包數
+    let maxDraws = 20;     // 由使用者設定
+
+    // 取得頁面上各項元素
+    const remainingDrawsDisplay = document.getElementById("remainingDraws");
+    const totalAmountDisplay = document.getElementById("totalAmount");
+    const drawCountInput = document.getElementById("drawCount");
+    const setDrawCountButton = document.getElementById("setDrawCount");
+    const resetButton = document.getElementById("resetBtn");
+    const envelopes = document.querySelectorAll(".envelope");
+
+    // 更新介面上的剩餘次數與總金額
+    function updateUI() {
+      remainingDrawsDisplay.textContent = remainingDraws;
+      totalAmountDisplay.textContent = totalAmount;
+    }
+
+    // 依機率取得一筆獎金數值
+    function getRandomPrize() {
+      let rand = Math.random();
+      let cumulative = 0;
+      for (let i = 0; i < prizeConfig.length; i++) {
+        cumulative += prizeConfig[i].probability;
+        if (rand < cumulative) {
+          return prizeConfig[i].amount;
+        }
+      }
+      return 0;
+    }
+
+    // 為每個紅包卡牌加入點擊事件
+    envelopes.forEach(card => {
+      card.addEventListener("click", function() {
+        // 若該卡牌已翻開或剩餘抽取次數用完，就不處理
+        if (card.classList.contains("flipped") || remainingDraws <= 0) {
+          return;
+        }
+        // 加上 .flipped 觸發翻轉動畫
+        card.classList.add("flipped");
+        // 取得顯示獎金的區域
+        const prizeElem = card.querySelector(".prize");
+        // 模擬動畫延遲 (約 300ms 後顯示獎金)
+        setTimeout(() => {
+          const prize = getRandomPrize();
+          // 如果金額為 0 則顯示鼓勵語「再接再厲」
+          prizeElem.textContent = prize > 0 ? prize : "再接再厲";
+          totalAmount += prize;
+          remainingDraws--;
+          updateUI();
+        }, 300);
+      });
+    });
+
+    // 「設定」按鈕：設定可抽取紅包數量 (需介於 1 ~ 20)
+    setDrawCountButton.addEventListener("click", function() {
+      let count = parseInt(drawCountInput.value);
+      if (isNaN(count) || count < 1 || count > envelopes.length) {
+        alert("請輸入 1 到 20 之間的數字");
+        drawCountInput.value = maxDraws;
+        return;
+      }
+      maxDraws = count;
+      remainingDraws = count;
+      // 設定後重置遊戲（所有紅包回復未翻開）
+      resetGame();
+      updateUI();
+    });
+
+    // 重置遊戲狀態：所有紅包回復、總金額與剩餘次數重設
+    function resetGame() {
+      totalAmount = 0;
+      remainingDraws = maxDraws;
+      envelopes.forEach(card => {
+        card.classList.remove("flipped");
+        const prizeElem = card.querySelector(".prize");
+        prizeElem.textContent = "";
+      });
+      updateUI();
+    }
+
+    // 「重置」按鈕事件
+    resetButton.addEventListener("click", function() {
+      resetGame();
+    });
+
+    // 初始更新 UI
+    updateUI();
+  </script>
+</body>
+</html>
